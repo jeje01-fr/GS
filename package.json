@@ -1,0 +1,11 @@
+{
+  "name": "groove-scribe-batterie",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Convertit une partition MuseScore de batterie en liens Groove Scribe",
+  "dependencies": {
+    "@capacitor/android": "^6.1.2",
+    "@capacitor/cli": "^6.1.2",
+    "@capacitor/core": "^6.1.2"
+  }
+}
