@@ -1,0 +1,973 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Batterie vers Groove Scribe</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #EEF1F4;
+  --panel: #FFFFFF;
+  --ink: #141B24;
+  --muted: #56636F;
+  --line: #CDD5DC;
+  --accent: #1E3A8A;
+  --accent-ink: #FFFFFF;
+  --sel: #DCE6FF;
+  --warn: #7A4E00;
+  --warn-bg: #FFF3D1;
+  --err: #8F1D1D;
+  --err-bg: #FDE7E7;
+  --h: #B7791F;
+  --t: #7A4FBF;
+  --s: #C8433A;
+  --k: #1B6E8A;
+  --font: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #10161D;
+    --panel: #18212B;
+    --ink: #E7ECF1;
+    --muted: #9AA7B4;
+    --line: #2B3846;
+    --accent: #9DB4FF;
+    --accent-ink: #0F1730;
+    --sel: #243458;
+    --warn: #F2C879;
+    --warn-bg: #3A2E12;
+    --err: #FFB4B4;
+    --err-bg: #3D1B1B;
+    --h: #E3B04B;
+    --t: #B69AF0;
+    --s: #F0857C;
+    --k: #6CB8D4;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #10161D;
+  --panel: #18212B;
+  --ink: #E7ECF1;
+  --muted: #9AA7B4;
+  --line: #2B3846;
+  --accent: #9DB4FF;
+  --accent-ink: #0F1730;
+  --sel: #243458;
+  --warn: #F2C879;
+  --warn-bg: #3A2E12;
+  --err: #FFB4B4;
+  --err-bg: #3D1B1B;
+  --h: #E3B04B;
+  --t: #B69AF0;
+  --s: #F0857C;
+  --k: #6CB8D4;
+  color-scheme: dark;
+}
+
+:root { box-sizing: border-box; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+*, *::before, *::after { box-sizing: inherit; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 400 16px/1.5 var(--font);
+  -webkit-text-size-adjust: 100%;
+}
+.wrap { max-width: 980px; margin: 0 auto; padding: 28px 20px 64px; }
+
+h1 {
+  font-weight: 800;
+  font-size: clamp(1.9rem, 4.6vw, 2.9rem);
+  line-height: 1.05;
+  letter-spacing: -0.025em;
+  margin: 0 0 6px;
+}
+h2 { font-size: 1.15rem; font-weight: 600; margin: 0 0 4px; letter-spacing: -0.01em; }
+h3 { font-size: 1rem; font-weight: 600; margin: 0; }
+.lede { color: var(--muted); margin: 0 0 24px; max-width: 60ch; }
+.muted { color: var(--muted); }
+.mono { font-family: var(--mono); }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* --- zone de dépôt --- */
+.drop {
+  display: block;
+  border: 2px dashed var(--line);
+  border-radius: 14px;
+  background: var(--panel);
+  padding: 36px 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+.drop strong { display: block; font-size: 1.2rem; font-weight: 600; margin-bottom: 4px; }
+.drop span { color: var(--muted); }
+.drop:hover, .drop.over, .drop:focus-within { border-color: var(--accent); background: var(--sel); }
+.drop.compact { padding: 12px 16px; text-align: left; display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap; border-width: 1px; }
+.drop.compact strong { font-size: 1rem; margin: 0; overflow-wrap: anywhere; }
+
+.error { background: var(--err-bg); color: var(--err); border-radius: 10px; padding: 12px 14px; margin-top: 12px; }
+
+/* --- sections --- */
+section.block { margin-top: 32px; }
+.block > header { margin-bottom: 12px; }
+.block > header p { margin: 0; color: var(--muted); }
+
+.facts { display: flex; flex-wrap: wrap; gap: 8px 22px; margin: 14px 0 0; padding: 0; list-style: none; }
+.facts li { color: var(--muted); }
+.facts b { color: var(--ink); font-weight: 600; }
+
+/* --- carte du morceau --- */
+.legend { display: flex; flex-wrap: wrap; gap: 4px 18px; margin: 0 0 12px; font-size: .9rem; color: var(--muted); }
+.legend i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; vertical-align: -0.05em; }
+.dot-H { --c: var(--h); } .dot-T { --c: var(--t); } .dot-S { --c: var(--s); } .dot-K { --c: var(--k); }
+.legend i { background: var(--c); }
+
+.map { display: grid; grid-template-columns: repeat(auto-fill, minmax(60px, 1fr)); gap: 5px; }
+.tile {
+  font: inherit; color: var(--ink);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 5px 5px 4px;
+  display: flex; flex-direction: column; align-items: flex-start; gap: 4px;
+  cursor: pointer;
+  text-align: left;
+}
+.tile .num { font: 500 .72rem/1 var(--mono); color: var(--muted); }
+.tile svg { width: 100%; height: auto; display: block; }
+.tile.empty { border-style: dashed; background: transparent; }
+.tile.empty .num { opacity: .7; }
+.tile.in { background: var(--sel); border-color: var(--accent); }
+.tile.in .num { color: var(--ink); font-weight: 500; }
+.tile.edge { box-shadow: inset 0 0 0 1px var(--accent); }
+.tile.anchor { outline: 2px solid var(--accent); outline-offset: 1px; }
+.tile:hover { border-color: var(--accent); }
+.c-H { fill: var(--h); } .c-T { fill: var(--t); } .c-S { fill: var(--s); } .c-K { fill: var(--k); }
+.c-off { fill: var(--line); opacity: .55; }
+.hint { min-height: 1.5em; margin: 10px 0 0; color: var(--muted); }
+
+/* --- plage --- */
+.range { display: flex; flex-wrap: wrap; gap: 14px 22px; align-items: end; }
+label.f { display: flex; flex-direction: column; gap: 4px; font-size: .9rem; color: var(--muted); }
+input[type="number"], input[type="text"], select {
+  font: inherit; font-family: var(--mono); font-size: .95rem; color: var(--ink);
+  background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
+  padding: 8px 10px; min-height: 40px;
+}
+input[type="number"] { width: 96px; }
+select { font-family: var(--font); }
+
+.presets { margin-top: 18px; }
+.presets h3 { margin-bottom: 8px; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 12px; padding: 0; list-style: none; }
+.chip { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; background: var(--panel); overflow: hidden; }
+.chip button { font: inherit; background: none; border: 0; color: var(--ink); cursor: pointer; padding: 6px 12px; }
+.chip button.go:hover { background: var(--sel); }
+.chip button.del { color: var(--muted); padding: 6px 10px; border-left: 1px solid var(--line); }
+.chip button.del:hover { color: var(--err); }
+.save-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; }
+.save-row input[type="text"] { font-family: var(--font); min-width: 220px; }
+
+/* --- boutons --- */
+.btn {
+  font: 600 .95rem/1 var(--font);
+  display: inline-flex; align-items: center; justify-content: center;
+  min-height: 42px; padding: 0 16px;
+  border-radius: 10px; border: 1px solid var(--line);
+  background: var(--panel); color: var(--ink);
+  cursor: pointer; text-decoration: none;
+}
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn.primary:hover { filter: brightness(1.08); }
+
+/* --- résultats --- */
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px 18px; margin-top: 14px; }
+.card .meta { margin: 2px 0 12px; color: var(--muted); font-size: .92rem; }
+.tab { margin: 0 0 14px; padding: 10px 12px; background: var(--bg); border-radius: 8px; overflow-x: auto; font: 400 .82rem/1.55 var(--mono); }
+.tab .grp + .grp { margin-top: 10px; }
+.tab .ln { white-space: pre; }
+.tab .l-H { color: var(--h); } .tab .l-T { color: var(--t); } .tab .l-S { color: var(--s); } .tab .l-K { color: var(--k); }
+.tab .lbl { color: var(--muted); }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.urlbox { width: 100%; margin-top: 12px; font: 400 .78rem/1.4 var(--mono); color: var(--muted); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+.warns { margin: 12px 0 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+.warns li { background: var(--warn-bg); color: var(--warn); border-radius: 8px; padding: 8px 12px; font-size: .92rem; }
+.empty-note { background: var(--panel); border: 1px dashed var(--line); border-radius: 12px; padding: 18px; margin-top: 14px; color: var(--muted); }
+
+/* --- réglages --- */
+details.settings { margin-top: 36px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 4px 18px; }
+details.settings summary { cursor: pointer; padding: 12px 0; font-weight: 600; }
+.set-grid { display: grid; gap: 16px 22px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); padding: 4px 0 16px; }
+.set-grid input[type="text"], .set-grid input[type="number"] { width: 100%; }
+table.inst { width: 100%; border-collapse: collapse; margin: 4px 0 16px; font-size: .92rem; }
+table.inst th { text-align: left; font-weight: 600; color: var(--muted); padding: 6px 8px; border-bottom: 1px solid var(--line); }
+table.inst td { padding: 8px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+table.inst .n { font-family: var(--mono); color: var(--muted); }
+table.inst .ign { color: var(--muted); font-style: italic; }
+.note { color: var(--muted); font-size: .9rem; margin: 0 0 12px; }
+
+footer { margin-top: 40px; color: var(--muted); font-size: .88rem; }
+[hidden] { display: none !important; }
+
+@media (max-width: 560px) {
+  .wrap { padding: 20px 14px 48px; }
+  .map { grid-template-columns: repeat(auto-fill, minmax(54px, 1fr)); }
+  .drop { padding: 28px 16px; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Batterie vers Groove Scribe</h1>
+  <p class="lede">Charge une partition MuseScore, choisis les mesures à travailler, et ouvre le groove déjà écrit dans Groove Scribe. Le fichier est lu dans ton navigateur et n'est envoyé nulle part.</p>
+
+  <label class="drop" id="drop" for="file">
+    <input class="sr" id="file" type="file" accept=".mscz,.mscx">
+    <strong id="dropTitle">Dépose ton fichier MuseScore ici</strong>
+    <span id="dropSub">ou clique pour le choisir (.mscz ou .mscx)</span>
+  </label>
+  <div class="error" id="error" role="alert" hidden></div>
+
+  <main id="work" hidden>
+    <ul class="facts" id="facts"></ul>
+
+    <section class="block" aria-labelledby="mapTitle">
+      <header>
+        <h2 id="mapTitle">Carte du morceau</h2>
+        <p>Chaque case est une mesure. Les points montrent ce qui est joué : plus c'est dense, plus ça joue. Un fill se repère à un changement brutal.</p>
+      </header>
+      <div class="legend" aria-hidden="true">
+        <span><i class="dot-H"></i>charleston et cymbales</span>
+        <span><i class="dot-T"></i>toms</span>
+        <span><i class="dot-S"></i>caisse claire</span>
+        <span><i class="dot-K"></i>grosse caisse</span>
+      </div>
+      <div class="map" id="map"></div>
+      <p class="hint" id="hint" aria-live="polite"></p>
+    </section>
+
+    <section class="block" aria-labelledby="rangeTitle">
+      <header><h2 id="rangeTitle">Mesures à générer</h2></header>
+      <div class="range">
+        <label class="f">De la mesure<input type="number" id="from" min="1" inputmode="numeric"></label>
+        <label class="f">à la mesure<input type="number" id="to" min="1" inputmode="numeric"></label>
+        <label class="f">Découper en liens de
+          <select id="chunk">
+            <option value="1">1 mesure</option>
+            <option value="2">2 mesures</option>
+            <option value="4">4 mesures</option>
+            <option value="8" selected>8 mesures</option>
+            <option value="16">16 mesures</option>
+            <option value="0">pas de découpage</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="presets">
+        <h3>Mes repères</h3>
+        <p class="note">Nomme une plage (couplet, refrain, fill 1) pour la retrouver en un clic. Les repères sont gardés dans ce navigateur, pour ce fichier.</p>
+        <ul class="chips" id="chips"></ul>
+        <div class="save-row">
+          <label class="f">Nom du repère
+            <input type="text" id="presetName" list="sectionNames" maxlength="40" placeholder="Couplet 1" autocomplete="off">
+            <datalist id="sectionNames"></datalist>
+          </label>
+          <button class="btn" id="savePreset" type="button">Enregistrer la plage</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="block" aria-labelledby="resTitle" aria-live="polite">
+      <header><h2 id="resTitle">Liens Groove Scribe</h2></header>
+      <div id="results"></div>
+    </section>
+
+    <details class="settings">
+      <summary>Réglages et correspondance des instruments</summary>
+      <div class="set-grid">
+        <label class="f">Titre affiché dans Groove Scribe<input type="text" id="titleIn"></label>
+        <label class="f">Tempo (vide = celui du fichier)<input type="number" id="tempoIn" min="30" max="300" inputmode="numeric"></label>
+        <label class="f">Adresse de Groove Scribe<input type="text" id="baseIn"></label>
+      </div>
+      <p class="note">Chaque son du fichier est envoyé vers une ligne de Groove Scribe. Change la ligne si un son ne tombe pas au bon endroit. « Ignorer » retire le son du lien.</p>
+      <table class="inst" id="inst"></table>
+    </details>
+  </main>
+
+  <footer>Les liens sont construits pour une seule signature rythmique et une seule subdivision à la fois : si la plage en change, elle est coupée en plusieurs liens.</footer>
+</div>
+
+<script>
+(() => {
+'use strict';
+
+/* ================= constantes ================= */
+const DEFAULT_BASE = 'https://www.mikeslessons.com/groove/';
+
+const DEST_OPTIONS = [
+  ['K:o', 'Grosse caisse'],
+  ['K:x', 'Charleston au pied'],
+  ['S:O', 'Caisse claire'],
+  ['S:o', 'Caisse claire (léger)'],
+  ['S:x', 'Cross-stick'],
+  ['S:g', 'Ghost note'],
+  ['S:f', 'Flam'],
+  ['S:b', 'Roulement (buzz)'],
+  ['H:x', 'Charleston fermé'],
+  ['H:X', 'Charleston fermé (accent)'],
+  ['H:o', 'Charleston ouvert'],
+  ['H:c', 'Crash'],
+  ['H:r', 'Ride'],
+  ['H:b', 'Cloche de ride'],
+  ['H:m', 'Cowbell'],
+  ['T1:o', 'Tom 1 (aigu)'],
+  ['T2:o', 'Tom 2'],
+  ['T3:o', 'Tom 3'],
+  ['T4:o', 'Tom 4 (basse)'],
+  ['-', 'Ignorer']
+];
+const DEFAULT_MAP = {
+  35: 'K:o', 36: 'K:o', 44: 'K:x',
+  37: 'S:x', 38: 'S:O', 40: 'S:O',
+  42: 'H:x', 46: 'H:o',
+  49: 'H:c', 52: 'H:c', 55: 'H:c', 57: 'H:c',
+  51: 'H:r', 59: 'H:r', 53: 'H:b', 56: 'H:m',
+  50: 'T1:o', 48: 'T1:o', 47: 'T2:o', 45: 'T3:o', 43: 'T4:o', 41: 'T4:o'
+};
+const GM_NAMES = {
+  35: 'Grosse caisse 2', 36: 'Grosse caisse', 37: 'Cross-stick', 38: 'Caisse claire',
+  40: 'Caisse claire (électrique)', 41: 'Tom basse 2', 42: 'Charleston fermé',
+  43: 'Tom basse 1', 44: 'Charleston pédale', 45: 'Tom basse', 46: 'Charleston ouvert',
+  47: 'Tom médium-bas', 48: 'Tom médium-haut', 49: 'Crash', 50: 'Tom aigu', 51: 'Ride',
+  52: 'Chinoise', 53: 'Cloche de ride', 55: 'Splash', 56: 'Cowbell', 57: 'Crash 2', 59: 'Ride 2'
+};
+const H_PRIORITY = ['c', 'o', 'r', 'x'];           // crash > ouvert > ride > fermé
+const ACCENT_UPGRADE = { S: { o: 'O' }, H: { x: 'X' } }; // accent détecté (Articulation) sur un coup normal
+const LANE_ORDER = ['H', 'T1', 'T2', 'T3', 'T4', 'S', 'K'];
+const LANE_LABEL = { H: 'HH', T1: 'T1', T2: 'T2', T3: 'T3', T4: 'T4', S: 'S ', K: 'K ' };
+const LANE_CLASS = { H: 'H', T1: 'T', T2: 'T', T3: 'T', T4: 'T', S: 'S', K: 'K' };
+const ROW_OF = { H: 0, T1: 1, T2: 1, T3: 1, T4: 1, S: 2, K: 3 };
+const DIV_NAMES = { 8: 'croches', 16: 'doubles-croches', 32: 'triples-croches', 12: 'triolets de croches', 24: 'triolets de doubles-croches', 48: 'triolets de triples-croches' };
+const DUR_WHOLE = { long: 8, breve: 2, whole: 1, half: 1 / 2, quarter: 1 / 4, eighth: 1 / 8, '16th': 1 / 16, '32nd': 1 / 32, '64th': 1 / 64, '128th': 1 / 128, '256th': 1 / 256 };
+
+/* ================= état ================= */
+const state = {
+  fileName: '', score: null, map: {}, from: 1, to: 1, anchor: null,
+  chunk: 8, tempoOverride: '', base: DEFAULT_BASE, title: '', presets: []
+};
+
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const plural = (n, one, many) => n + ' ' + (n > 1 ? many : one);
+
+/* ================= lecture du .mscz (zip) ================= */
+async function mscxFromMscz(buf) {
+  const dv = new DataView(buf);
+  let eocd = -1;
+  for (let i = buf.byteLength - 22; i >= Math.max(0, buf.byteLength - 22 - 65535); i--) {
+    if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+  }
+  if (eocd < 0) throw new Error("Ce fichier n'est pas une archive .mscz valide.");
+  const total = dv.getUint16(eocd + 10, true);
+  let p = dv.getUint32(eocd + 16, true);
+  const entries = [];
+  for (let i = 0; i < total; i++) {
+    if (dv.getUint32(p, true) !== 0x02014b50) break;
+    const method = dv.getUint16(p + 10, true);
+    const csize = dv.getUint32(p + 20, true);
+    const nlen = dv.getUint16(p + 28, true), elen = dv.getUint16(p + 30, true), clen = dv.getUint16(p + 32, true);
+    const lho = dv.getUint32(p + 42, true);
+    const name = new TextDecoder().decode(new Uint8Array(buf, p + 46, nlen));
+    entries.push({ name, method, csize, lho });
+    p += 46 + nlen + elen + clen;
+  }
+  const cand = entries.filter(e => /\.mscx$/i.test(e.name));
+  const entry = cand.find(e => !e.name.includes('/')) || cand[0];
+  if (!entry) throw new Error("Aucune partition (.mscx) trouvée dans l'archive.");
+  const nlen = dv.getUint16(entry.lho + 26, true), elen = dv.getUint16(entry.lho + 28, true);
+  const start = entry.lho + 30 + nlen + elen;
+  const data = new Uint8Array(buf, start, entry.csize);
+  let out;
+  if (entry.method === 0) out = data;
+  else if (entry.method === 8) {
+    const stream = new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+    out = new Uint8Array(await new Response(stream).arrayBuffer());
+  } else throw new Error('Compression du fichier non prise en charge.');
+  return new TextDecoder('utf-8').decode(out);
+}
+
+/* ================= lecture de la partition ================= */
+const kids = (el, tag) => Array.from(el.children).filter(c => !tag || c.tagName === tag);
+const kidText = (el, tag) => { const c = kids(el, tag)[0]; return c ? c.textContent.trim() : ''; };
+const frac = s => { const m = /^(-?\d+)\s*\/\s*(\d+)$/.exec((s || '').trim()); return m ? (+m[1]) / (+m[2]) : NaN; };
+
+function parseScore(xmlText) {
+  const doc = new DOMParser().parseFromString(xmlText, 'application/xml');
+  if (doc.getElementsByTagName('parsererror').length) throw new Error('La partition est illisible (XML invalide).');
+  const score = doc.getElementsByTagName('Score')[0];
+  if (!score) throw new Error("Ce fichier ne ressemble pas à une partition MuseScore.");
+  const division = parseInt((doc.getElementsByTagName('Division')[0] || {}).textContent, 10) || 480;
+
+  // --- portées de batterie ---
+  const drumStaffIds = [];
+  const drumNames = {};
+  let counter = 0;
+  kids(score, 'Part').forEach(part => {
+    const inst = kids(part, 'Instrument')[0];
+    const staves = kids(part, 'Staff');
+    const ids = staves.map(s => { counter++; return s.getAttribute('id') || String(counter); });
+    const isDrum = (inst && (kidText(inst, 'useDrumset') === '1' || inst.getAttribute('id') === 'drumset')) ||
+      staves.some(s => kids(s, 'StaffType').some(t => t.getAttribute('group') === 'percussion'));
+    if (isDrum) {
+      drumStaffIds.push(...ids);
+      if (inst) kids(inst, 'Drum').forEach(d => { drumNames[d.getAttribute('pitch')] = kidText(d, 'name'); });
+    }
+  });
+  if (!drumStaffIds.length) throw new Error('Aucune portée de batterie trouvée dans ce fichier.');
+  const staffEl = kids(score, 'Staff').find(s => s.getAttribute('id') === drumStaffIds[0]);
+  if (!staffEl) throw new Error('La portée de batterie est introuvable.');
+
+  // --- textes de repère (INTRO, COUPLET 1...) ---
+  const labels = [];
+  kids(staffEl).filter(f => /^(VBox|HBox|TBox)$/.test(f.tagName)).forEach(box => {
+    kids(box, 'Text').forEach(t => {
+      const style = kidText(t, 'style');
+      const txt = kidText(t, 'text').replace(/\s+/g, ' ').trim();
+      if (txt && style !== 'title' && style !== 'subtitle' && style !== 'composer' && style !== 'lyricist') labels.push(txt);
+    });
+  });
+
+  // --- mesures ---
+  const measures = [];
+  let sigN = 4, sigD = 4, bpm = null, firstBpm = null;
+  const pitchCounts = {};
+  let index = 0;
+  kids(staffEl, 'Measure').forEach(mEl => {
+    index++;
+    const ts = mEl.getElementsByTagName('TimeSig')[0];
+    if (ts) {
+      const n = parseInt(kidText(ts, 'sigN'), 10), d = parseInt(kidText(ts, 'sigD'), 10);
+      if (n > 0 && d > 0) { sigN = n; sigD = d; }
+    }
+    const tp = mEl.getElementsByTagName('Tempo')[0];
+    if (tp) {
+      const v = parseFloat(kidText(tp, 'tempo'));
+      if (v > 0) { bpm = Math.round(v * 60); if (firstBpm === null) firstBpm = bpm; }
+    }
+    const nominal = sigN * 4 * division / sigD;
+    const lenAttr = mEl.getAttribute('len');
+    const actual = lenAttr && !isNaN(frac(lenAttr)) ? frac(lenAttr) * 4 * division : nominal;
+
+    const m = { n: index, sigN, sigD, ticks: nominal, tempo: bpm, hits: [], graces: 0, irregular: Math.abs(actual - nominal) > 0.5 };
+
+    const containers = [];
+    if (kids(mEl).some(c => c.tagName === 'Chord' || c.tagName === 'Rest')) containers.push(mEl);
+    kids(mEl, 'voice').forEach(v => containers.push(v));
+
+    containers.forEach(cont => {
+      let pos = 0;
+      const tup = [];
+      let pendingGrace = [];
+      const ratio = () => tup.reduce((r, t) => r * t.n / t.a, 1);
+      kids(cont).forEach(ev => {
+        const tag = ev.tagName;
+        if (tag === 'location') {
+          const f = frac(kidText(ev, 'fractions'));
+          if (!isNaN(f)) pos += f * 4 * division;
+        } else if (tag === 'Tuplet') {
+          const n = parseInt(kidText(ev, 'normalNotes'), 10) || 2, a = parseInt(kidText(ev, 'actualNotes'), 10) || 3;
+          tup.push({ n, a });
+        } else if (tag === 'endTuplet') {
+          tup.pop();
+        } else if (tag === 'Rest' || tag === 'Chord') {
+          const dt = kidText(ev, 'durationType');
+          let dur;
+          if (dt === 'measure') {
+            const f = frac(kidText(ev, 'duration'));
+            dur = isNaN(f) ? actual : f * 4 * division;
+          } else {
+            const w = DUR_WHOLE[dt] || 0;
+            const dots = parseInt(kidText(ev, 'dots'), 10) || 0;
+            dur = w * (2 - Math.pow(2, -dots)) * 4 * division * ratio();
+          }
+          if (tag === 'Chord') {
+            const isGrace = kids(ev).some(c => /^(acciaccatura|appoggiatura|grace)/.test(c.tagName));
+            const accent = kids(ev, 'Articulation').some(a => /accent|marcato/i.test(kidText(a, 'subtype')));
+            if (isGrace) {
+              m.graces += kids(ev, 'Note').length;
+              kids(ev, 'Note').forEach(note => {
+                if (kidText(note, 'visible') === '0') return;
+                const pitch = parseInt(kidText(note, 'pitch'), 10);
+                if (!isNaN(pitch)) pendingGrace.push(pitch);
+              });
+              dur = 0;
+            } else {
+              kids(ev, 'Note').forEach(note => {
+                if (kidText(note, 'visible') === '0') return;
+                if (kids(note, 'endSpanner').length) return;
+                if (kids(note, 'Spanner').some(sp => sp.getAttribute('type') === 'Tie' && kids(sp, 'prev').length)) return;
+                const pitch = parseInt(kidText(note, 'pitch'), 10);
+                if (isNaN(pitch)) return;
+                let flam = false;
+                const gi = pendingGrace.indexOf(pitch);
+                if (gi !== -1) { flam = true; pendingGrace.splice(gi, 1); m.graces--; }
+                m.hits.push({ t: pos, p: pitch, accent, flam });
+                pitchCounts[pitch] = (pitchCounts[pitch] || 0) + 1;
+              });
+              pendingGrace = [];
+            }
+          }
+          pos += dur;
+        }
+      });
+    });
+    m.hits.sort((a, b) => a.t - b.t);
+    measures.push(m);
+  });
+  if (!measures.length) throw new Error('Aucune mesure trouvée.');
+
+  return {
+    division, measures, pitchCounts, drumNames, labels,
+    tempo: firstBpm, drumStaves: drumStaffIds.length
+  };
+}
+
+/* ================= conversion vers Groove Scribe ================= */
+function splitBlocks(measures, chunk) {
+  const groups = [];
+  let cur = [];
+  for (const m of measures) {
+    if (cur.length && (cur[0].sigN !== m.sigN || cur[0].sigD !== m.sigD)) { groups.push(cur); cur = []; }
+    cur.push(m);
+  }
+  if (cur.length) groups.push(cur);
+  const out = [];
+  for (const g of groups) {
+    if (!chunk) out.push(g);
+    else for (let i = 0; i < g.length; i += chunk) out.push(g.slice(i, i + chunk));
+  }
+  return out;
+}
+
+function listMeasures(arr) {
+  const u = Array.from(new Set(arr));
+  return u.length > 6 ? u.slice(0, 6).join(', ') + '…' : u.join(', ');
+}
+
+function convertBlock(score, measures, map, tempoOverride) {
+  const { division } = score;
+  const { sigN, sigD } = measures[0];
+  const warnings = [];
+  const ignored = {};
+  let graces = 0;
+  const irregular = [];
+
+  const mapped = [];
+  measures.forEach(m => {
+    graces += m.graces;
+    if (m.irregular) irregular.push(m.n);
+    m.hits.forEach(h => {
+      const d = map[h.p];
+      if (!d || d === '-') ignored[h.p] = (ignored[h.p] || 0) + 1;
+      else mapped.push(h);
+    });
+  });
+
+  // choix de la subdivision : la plus proche de l'écriture naturelle du morceau qui range
+  // toutes les notes exactement. On essaie d'abord la résolution qui correspond au
+  // dénominateur de la mesure (8 pour une mesure composée comme 12/8, 4 pour une mesure
+  // simple), confirmée par les exemples officiels de Groove Scribe pour les mesures
+  // composées, puis seulement si besoin les grilles plus fines (16, 32). Les grilles en
+  // triolets ne sont pas essayées : le format d'URL de Groove Scribe pour les triolets
+  // n'est pas documenté de façon fiable.
+  const divCandidates = Array.from(new Set([sigD, 8, 16, 32].filter(d => d >= 4)));
+  let div = null;
+  for (const d of divCandidates) {
+    const slots = sigN * d / sigD;
+    if (!Number.isInteger(slots)) continue;
+    const st = 4 * division / d;
+    if (mapped.every(h => Math.abs(h.t / st - Math.round(h.t / st)) < 0.02)) { div = d; break; }
+  }
+  const exact = div !== null;
+  if (!exact) div = Number.isInteger(sigN * 32 / sigD) ? 32 : 16;
+  const slots = sigN * div / sigD;
+  const st = 4 * division / div;
+
+  const lanes = { H: [], S: [], K: [], T1: [], T2: [], T3: [], T4: [] };
+  const used = new Set(['H', 'S', 'K']);
+  let rounded = 0, overflow = 0;
+  const collisions = [];
+
+  measures.forEach(m => {
+    const arr = {};
+    for (const L in lanes) arr[L] = new Array(slots).fill('-');
+    m.hits.forEach(h => {
+      const d = map[h.p];
+      if (!d || d === '-') return;
+      let [L, ch] = d.split(':');
+      if (h.flam && L === 'S' && (ch === 'o' || ch === 'O')) ch = 'f';
+      else if (h.accent && ACCENT_UPGRADE[L] && ACCENT_UPGRADE[L][ch]) ch = ACCENT_UPGRADE[L][ch];
+      const pos = h.t / st;
+      const s = Math.round(pos);
+      if (Math.abs(pos - s) >= 0.02) rounded++;
+      if (s >= slots) { overflow++; return; }
+      if (L === 'H') {
+        const cur = arr.H[s];
+        if (cur !== '-' && cur !== ch) {
+          collisions.push(m.n);
+          if (H_PRIORITY.indexOf(ch) < H_PRIORITY.indexOf(cur)) arr.H[s] = ch;
+          return;
+        }
+      }
+      arr[L][s] = ch;
+      used.add(L);
+    });
+    for (const L in lanes) lanes[L].push(arr[L].join(''));
+  });
+
+  const lines = {};
+  LANE_ORDER.forEach(L => { if (used.has(L)) lines[L] = lanes[L]; });
+
+  const tempo = tempoOverride || measures[0].tempo || score.tempo || 120;
+
+  // avertissements
+  const ign = Object.keys(ignored);
+  if (ign.length) {
+    const txt = ign.map(p => `${ignored[p]} × ${GM_NAMES[p] || score.drumNames[p] || 'son ' + p}`).join(', ');
+    warnings.push(`Sons ignorés (aucune ligne Groove Scribe associée) : ${txt}. Tu peux les rediriger dans les réglages.`);
+  }
+  if (collisions.length) warnings.push(`Deux sons de la ligne charleston/cymbales tombent au même endroit (mesures ${listMeasures(collisions)}). Groove Scribe n'en accepte qu'un : le plus fort est gardé (crash, puis charleston ouvert, ride, fermé).`);
+  if (graces) warnings.push(`${plural(graces, "note d'ornement", "notes d'ornement")} (flam, appoggiature) non reprise${graces > 1 ? 's' : ''}.`);
+  if (!exact) warnings.push(`Le rythme ne tombe pas sur une grille droite (triolets ou autre subdivision ?) : ${plural(rounded, 'note arrondie', 'notes arrondies')} à la triple-croche la plus proche. Groove Scribe ne gère de façon fiable que les grilles droites (croches, doubles, triples-croches) ; une plage avec de vrais triolets sera déformée.`);
+  if (overflow) warnings.push(`${plural(overflow, 'note dépasse', 'notes dépassent')} la fin de la mesure et ${overflow > 1 ? 'sont' : 'est'} ignorée${overflow > 1 ? 's' : ''}.`);
+  if (irregular.length) warnings.push(`Mesure de durée irrégulière (${listMeasures(irregular)}) : elle est traitée comme une mesure normale.`);
+
+  return { sigN, sigD, div, tempo, lines, count: measures.length, first: measures[0].n, last: measures[measures.length - 1].n, warnings, notes: mapped.length };
+}
+
+function buildUrl(base, r, title) {
+  const q = [];
+  const add = (k, v) => q.push(k + '=' + encodeURIComponent(v));
+  add('TimeSig', r.sigN + '/' + r.sigD);
+  add('Div', r.div);
+  add('Tempo', r.tempo);
+  add('Measures', r.count);
+  if (title) add('Title', title);
+  LANE_ORDER.forEach(L => { if (r.lines[L]) add(L, '|' + r.lines[L].join('|') + '|'); });
+  return base + (base.includes('?') ? '&' : '?') + q.join('&');
+}
+
+/* ================= interface : carte ================= */
+let tiles = [];
+
+function tileSvg(m) {
+  const cells = new Set();
+  const rowsUsed = [];
+  m.hits.forEach(h => {
+    const d = state.map[h.p];
+    if (!d || d === '-') return;
+    const L = d.split(':')[0];
+    const col = Math.min(15, Math.floor(h.t / m.ticks * 16));
+    cells.add(ROW_OF[L] * 16 + col);
+    rowsUsed.push(ROW_OF[L]);
+  });
+  const cls = ['c-H', 'c-T', 'c-S', 'c-K'];
+  let out = '<svg viewBox="0 0 48 12" aria-hidden="true" focusable="false">';
+  for (let r = 0; r < 4; r++) {
+    for (let c = 0; c < 16; c++) {
+      const on = cells.has(r * 16 + c);
+      out += `<circle cx="${c * 3 + 1.5}" cy="${r * 3 + 1.5}" r="${on ? 1.15 : 0.55}" class="${on ? cls[r] : 'c-off'}"/>`;
+    }
+  }
+  return { svg: out + '</svg>', empty: cells.size === 0, count: cells.size };
+}
+
+function renderMap() {
+  const map = $('#map');
+  map.textContent = '';
+  tiles = state.score.measures.map(m => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'tile';
+    b.dataset.n = m.n;
+    const t = tileSvg(m);
+    if (t.empty) b.classList.add('empty');
+    const nb = m.hits.filter(h => state.map[h.p] && state.map[h.p] !== '-').length;
+    b.setAttribute('aria-label', `Mesure ${m.n}, ${nb ? plural(nb, 'note', 'notes') : 'silence'}`);
+    b.title = `Mesure ${m.n} : ${nb ? plural(nb, 'note', 'notes') : 'silence'}`;
+    b.innerHTML = `<span class="num">${m.n}</span>${t.svg}`;
+    map.appendChild(b);
+    return b;
+  });
+  paintRange();
+}
+
+function paintRange() {
+  tiles.forEach((b, i) => {
+    const n = i + 1;
+    const inR = n >= state.from && n <= state.to;
+    b.classList.toggle('in', inR);
+    b.classList.toggle('edge', n === state.from || n === state.to);
+    b.classList.toggle('anchor', state.anchor === n);
+    b.setAttribute('aria-pressed', inR ? 'true' : 'false');
+  });
+  $('#from').value = state.from;
+  $('#to').value = state.to;
+  const hint = $('#hint');
+  if (state.anchor) hint.textContent = `Début : mesure ${state.anchor}. Clique maintenant la dernière mesure de la plage.`;
+  else hint.textContent = state.from === state.to
+    ? `Mesure ${state.from} sélectionnée. Clique une autre mesure pour étendre la plage.`
+    : `Mesures ${state.from} à ${state.to} sélectionnées (${state.to - state.from + 1}). Clique une mesure pour recommencer.`;
+}
+
+function setRange(a, b) {
+  const max = state.score.measures.length;
+  a = Math.max(1, Math.min(max, Math.round(a) || 1));
+  b = Math.max(1, Math.min(max, Math.round(b) || a));
+  state.from = Math.min(a, b);
+  state.to = Math.max(a, b);
+  paintRange();
+  renderResults();
+}
+
+$('#map').addEventListener('click', e => {
+  const b = e.target.closest('.tile');
+  if (!b) return;
+  const n = +b.dataset.n;
+  if (e.shiftKey) {
+    state.anchor = null;
+    if (n < state.from) setRange(n, state.to); else setRange(state.from, n);
+  } else if (state.anchor === null) {
+    state.anchor = n;
+    setRange(n, n);
+  } else {
+    const a = state.anchor;
+    state.anchor = null;
+    setRange(a, n);
+  }
+});
+
+$('#from').addEventListener('change', () => { state.anchor = null; setRange(+$('#from').value, Math.max(+$('#from').value, state.to)); });
+$('#to').addEventListener('change', () => { state.anchor = null; setRange(Math.min(state.from, +$('#to').value), +$('#to').value); });
+$('#chunk').addEventListener('change', () => { state.chunk = +$('#chunk').value; renderResults(); });
+
+/* ================= interface : résultats ================= */
+function renderTab(r) {
+  const groups = [];
+  for (let i = 0; i < r.count; i += 4) {
+    const rows = [];
+    LANE_ORDER.forEach(L => {
+      if (!r.lines[L]) return;
+      const seg = r.lines[L].slice(i, i + 4);
+      rows.push(`<div class="ln l-${LANE_CLASS[L]}"><span class="lbl">${LANE_LABEL[L]}</span> |${esc(seg.join('|'))}|</div>`);
+    });
+    groups.push(`<div class="grp">${rows.join('')}</div>`);
+  }
+  return groups.join('');
+}
+
+function renderResults() {
+  const box = $('#results');
+  const sel = state.score.measures.slice(state.from - 1, state.to);
+  const blocks = splitBlocks(sel, state.chunk);
+  const title = state.title.trim();
+  box.textContent = '';
+  const total = sel.reduce((n, m) => n + m.hits.filter(h => state.map[h.p] && state.map[h.p] !== '-').length, 0);
+  if (!total) {
+    const d = document.createElement('div');
+    d.className = 'empty-note';
+    d.textContent = `Les mesures ${state.from} à ${state.to} ne contiennent aucune note de batterie. Choisis une autre plage sur la carte.`;
+    box.appendChild(d);
+    return;
+  }
+  blocks.forEach(b => {
+    const r = convertBlock(state.score, b, state.map, state.tempoOverride ? +state.tempoOverride : 0);
+    const label = r.first === r.last ? `Mesure ${r.first}` : `Mesures ${r.first} à ${r.last}`;
+    const url = buildUrl(state.base || DEFAULT_BASE, r, (title ? title + ' - ' : '') + label.toLowerCase());
+    const card = document.createElement('article');
+    card.className = 'card';
+    card.innerHTML = `
+      <h3>${label}</h3>
+      <p class="meta">${r.sigN}/${r.sigD}, ${r.tempo} BPM, grille en ${DIV_NAMES[r.div] || 'division ' + r.div}, ${plural(r.notes, 'note', 'notes')}</p>
+      <div class="tab" role="group" aria-label="Aperçu de la grille">${renderTab(r)}</div>
+      <div class="actions">
+        <a class="btn primary" href="${esc(url)}" target="_blank" rel="noopener noreferrer">Ouvrir dans Groove Scribe</a>
+        <button class="btn" type="button" data-copy>Copier le lien</button>
+      </div>
+      <input class="urlbox" type="text" readonly value="${esc(url)}" aria-label="Lien Groove Scribe pour ${label.toLowerCase()}">
+      ${r.warnings.length ? `<ul class="warns">${r.warnings.map(w => `<li>${esc(w)}</li>`).join('')}</ul>` : ''}`;
+    box.appendChild(card);
+  });
+}
+
+$('#results').addEventListener('click', async e => {
+  const btn = e.target.closest('[data-copy]');
+  if (btn) {
+    const input = btn.closest('.card').querySelector('.urlbox');
+    let ok = false;
+    try { await navigator.clipboard.writeText(input.value); ok = true; } catch (_) { /* repli ci-dessous */ }
+    if (!ok) { try { input.focus(); input.select(); ok = document.execCommand('copy'); } catch (_) { ok = false; } }
+    const old = 'Copier le lien';
+    btn.textContent = ok ? 'Lien copié' : 'Sélectionne le lien ci-dessous';
+    if (!ok) { input.focus(); input.select(); }
+    setTimeout(() => { btn.textContent = old; }, 2200);
+    return;
+  }
+});
+$('#results').addEventListener('focusin', e => { if (e.target.classList.contains('urlbox')) e.target.select(); });
+
+/* ================= repères nommés ================= */
+const storeKey = () => 'gscribe-reperes:' + state.fileName;
+function loadPresets() {
+  try { state.presets = JSON.parse(localStorage.getItem(storeKey()) || '[]') || []; } catch (_) { state.presets = []; }
+}
+function savePresets() { try { localStorage.setItem(storeKey(), JSON.stringify(state.presets)); } catch (_) { /* stockage indisponible */ } }
+
+function renderPresets() {
+  const ul = $('#chips');
+  ul.textContent = '';
+  if (!state.presets.length) {
+    const li = document.createElement('li');
+    li.className = 'muted';
+    li.textContent = 'Aucun repère pour le moment.';
+    ul.appendChild(li);
+    return;
+  }
+  state.presets.forEach((p, i) => {
+    const li = document.createElement('li');
+    li.className = 'chip';
+    const range = p.from === p.to ? `mesure ${p.from}` : `mesures ${p.from} à ${p.to}`;
+    li.innerHTML = `<button type="button" class="go" data-i="${i}">${esc(p.name)} (${range})</button><button type="button" class="del" data-del="${i}" aria-label="Supprimer le repère ${esc(p.name)}">×</button>`;
+    ul.appendChild(li);
+  });
+}
+$('#chips').addEventListener('click', e => {
+  const go = e.target.closest('[data-i]');
+  const del = e.target.closest('[data-del]');
+  if (go) { const p = state.presets[+go.dataset.i]; state.anchor = null; setRange(p.from, p.to); $('#results').scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
+  if (del) { state.presets.splice(+del.dataset.del, 1); savePresets(); renderPresets(); }
+});
+$('#savePreset').addEventListener('click', () => {
+  const inp = $('#presetName');
+  const name = inp.value.trim();
+  if (!name) { inp.focus(); return; }
+  state.presets = state.presets.filter(p => p.name.toLowerCase() !== name.toLowerCase());
+  state.presets.push({ name, from: state.from, to: state.to });
+  savePresets(); renderPresets();
+  inp.value = '';
+});
+
+/* ================= réglages ================= */
+function renderInstruments() {
+  const t = $('#inst');
+  const pitches = Object.keys(state.score.pitchCounts).map(Number).sort((a, b) => state.score.pitchCounts[b] - state.score.pitchCounts[a]);
+  t.innerHTML = '<thead><tr><th>Son du fichier</th><th>Notes</th><th>Ligne Groove Scribe</th></tr></thead>';
+  const tb = document.createElement('tbody');
+  pitches.forEach(p => {
+    const known = state.map[p] && state.map[p] !== '-';
+    const name = GM_NAMES[p] || state.score.drumNames[p] || 'Son ' + p;
+    const opts = DEST_OPTIONS.map(([v, l]) => `<option value="${v}"${(state.map[p] || '-') === v ? ' selected' : ''}>${l}</option>`).join('');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${esc(name)} <span class="n">(${p})</span></td><td class="n">${state.score.pitchCounts[p]}</td><td><select data-pitch="${p}" aria-label="Ligne pour ${esc(name)}">${opts}</select>${known ? '' : ' <span class="ign">non reconnu, ignoré</span>'}</td>`;
+    tb.appendChild(tr);
+  });
+  t.appendChild(tb);
+}
+$('#inst').addEventListener('change', e => {
+  const s = e.target.closest('select[data-pitch]');
+  if (!s) return;
+  state.map[s.dataset.pitch] = s.value;
+  renderInstruments(); renderMap(); renderResults();
+});
+$('#titleIn').addEventListener('input', () => { state.title = $('#titleIn').value; renderResults(); });
+$('#tempoIn').addEventListener('input', () => { state.tempoOverride = $('#tempoIn').value; renderResults(); });
+$('#baseIn').addEventListener('input', () => { state.base = $('#baseIn').value.trim(); renderResults(); });
+
+/* ================= chargement du fichier ================= */
+function showError(msg) {
+  const e = $('#error');
+  e.textContent = msg;
+  e.hidden = !msg;
+}
+
+async function loadFile(file) {
+  showError('');
+  try {
+    const buf = await file.arrayBuffer();
+    let xml;
+    if (/\.mscx$/i.test(file.name)) xml = new TextDecoder('utf-8').decode(buf);
+    else if (/\.mscz$/i.test(file.name)) xml = await mscxFromMscz(buf);
+    else throw new Error('Format non pris en charge. Dans MuseScore, enregistre la partition en .mscz puis charge ce fichier.');
+    const score = parseScore(xml);
+
+    state.fileName = file.name;
+    state.score = score;
+    state.map = {};
+    Object.keys(score.pitchCounts).forEach(p => { state.map[p] = DEFAULT_MAP[p] || '-'; });
+    state.title = file.name.replace(/\.(mscz|mscx)$/i, '').replace(/_/g, ' ');
+    state.tempoOverride = '';
+    state.anchor = null;
+    loadPresets();
+
+    const first = score.measures.find(m => m.hits.some(h => state.map[h.p] && state.map[h.p] !== '-'));
+    const start = first ? first.n : 1;
+    state.from = start;
+    state.to = Math.min(score.measures.length, start + 3);
+
+    // interface
+    const drop = $('#drop');
+    drop.classList.add('compact');
+    $('#dropTitle').textContent = file.name;
+    $('#dropSub').textContent = 'Clique ou dépose un autre fichier pour le remplacer';
+    $('#work').hidden = false;
+
+    const sigs = Array.from(new Set(score.measures.map(m => m.sigN + '/' + m.sigD)));
+    const nNotes = Object.values(score.pitchCounts).reduce((a, b) => a + b, 0);
+    $('#facts').innerHTML =
+      `<li><b>${score.measures.length}</b> mesures</li>` +
+      `<li>signature <b>${sigs.join(', ')}</b></li>` +
+      (score.tempo ? `<li><b>${score.tempo}</b> BPM</li>` : '') +
+      `<li><b>${nNotes}</b> notes de batterie</li>` +
+      (score.drumStaves > 1 ? `<li>${score.drumStaves} portées de batterie : la première est utilisée</li>` : '');
+
+    $('#sectionNames').innerHTML = Array.from(new Set(score.labels)).map(l => `<option value="${esc(l)}"></option>`).join('');
+    $('#titleIn').value = state.title;
+    $('#tempoIn').value = '';
+    $('#tempoIn').placeholder = score.tempo ? String(score.tempo) : 'auto';
+    $('#baseIn').value = state.base;
+    $('#chunk').value = String(state.chunk);
+    $('#from').max = $('#to').max = score.measures.length;
+
+    renderInstruments();
+    renderMap();
+    renderPresets();
+    renderResults();
+  } catch (err) {
+    showError(err.message || String(err));
+  }
+}
+
+const fileInput = $('#file');
+fileInput.addEventListener('change', () => { if (fileInput.files[0]) loadFile(fileInput.files[0]); fileInput.value = ''; });
+const drop = $('#drop');
+['dragenter', 'dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('over'); }));
+['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('over'); }));
+drop.addEventListener('drop', e => { const f = e.dataTransfer && e.dataTransfer.files[0]; if (f) loadFile(f); });
+
+})();
+</script>
+</body>
+</html>
